@@ -14,6 +14,9 @@ public interface UsersService {
     @GetMapping("/users/email")
     ResponseEntity<?> getUserByEmail(@RequestParam String email);
 
+    @GetMapping("/users/validate")
+    ResponseEntity<?> validateCredentials(@RequestParam String email, @RequestParam String password);
+
     @PostMapping("/users")
     ResponseEntity<?> createUser(@RequestHeader("X-Actor-Role") String actorRole, @RequestBody UserDto body);
 

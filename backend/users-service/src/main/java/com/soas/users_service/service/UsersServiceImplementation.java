@@ -57,6 +57,15 @@ public class UsersServiceImplementation implements UsersService {
     }
 
     @Override
+    public ResponseEntity<?> validateCredentials(String email, String password) {
+        Optional<User> user = userRepository.findByEmailIgnoreCase(email);
+        if (user.isEmpty() || !user.get().getPassword().equals(password)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+        }
+        return ResponseEntity.ok(toDto(user.get()));
+    }
+
+    @Override
     public ResponseEntity<?> createUser(String actorRole, UserDto body) {
         User.Role actor = parseRole(actorRole);
         if (actor == null || actor == User.Role.USER) {

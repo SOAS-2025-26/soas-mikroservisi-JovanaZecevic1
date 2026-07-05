@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: api-gateway
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: users-service
+              uri: lb://users-service
+              predicates:
+                - Path=/users/**
+              filters:
+                - BasicAuth
+            - id: bank-account-service
+              uri: lb://bank-account-service
+              predicates:
+                - Path=/accounts/**
+              filters:
+                - BasicAuth
+            - id: crypto-wallet-service
+              uri: lb://crypto-wallet-service
+              predicates:
+                - Path=/wallets/**
+              filters:
+                - BasicAuth
+            - id: currency-exchange-service
+              uri: lb://currency-exchange-service
+              predicates:
+                - Path=/currency-exchange
+            - id: crypto-exchange-service
+              uri: lb://crypto-exchange-service
+              predicates:
+                - Path=/crypto-exchange
+            - id: currency-conversion-service
+              uri: lb://currency-conversion-service
+              predicates:
+                - Path=/currency-conversion
+              filters:
+                - BasicAuth
+            - id: trade-service
+              uri: lb://trade-service
+              predicates:
+                - Path=/trade-service
+              filters:
+                - BasicAuth
+
+server:
+  port: 8765
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
