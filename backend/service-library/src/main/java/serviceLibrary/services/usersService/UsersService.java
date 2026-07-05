@@ -9,16 +9,16 @@ import serviceLibrary.dto.usersService.UserDto;
 public interface UsersService {
 
     @GetMapping("/users")
-    ResponseEntity<?> getAllUsers();
+    ResponseEntity<?> getAllUsers(@RequestHeader("X-Actor-Role") String actorRole);
 
     @GetMapping("/users/email")
-    ResponseEntity<?> getUserByEmail(@RequestParam String email);
+    ResponseEntity<?> getUserByEmail(@RequestHeader("X-Actor-Role") String actorRole, @RequestParam String email);
 
     @GetMapping("/users/validate")
     ResponseEntity<?> validateCredentials(@RequestParam String email, @RequestParam String password);
 
     @PostMapping("/users")
-    ResponseEntity<?> createUser(@RequestHeader("X-Actor-Role") String actorRole, @RequestBody UserDto body);
+    ResponseEntity<?> createUser(@RequestHeader(value = "X-Actor-Role", required = false) String actorRole, @RequestBody UserDto body);
 
     @PutMapping("/users")
     ResponseEntity<?> updateUser(@RequestHeader("X-Actor-Role") String actorRole, @RequestBody UserDto body);

@@ -43,7 +43,12 @@ public class UsersServiceImplementation implements UsersService {
     private ObjectMapper objectMapper;
 
     @Override
-    public ResponseEntity<?> getAllUsers() {
+    public ResponseEntity<?> getAllUsers(String actorRole) {
+        User.Role actor = parseRole(actorRole);
+        if (actor == null || actor == User.Role.USER) {
+            throw new UnauthorizedActionException("You are not authorized to view users");
+        }
+
         List<UserDto> users = userRepository.findAll().stream()
                 .map(this::toDto)
                 .toList();
@@ -51,7 +56,12 @@ public class UsersServiceImplementation implements UsersService {
     }
 
     @Override
-    public ResponseEntity<?> getUserByEmail(String email) {
+    public ResponseEntity<?> getUserByEmail(String actorRole, String email) {
+        User.Role actor = parseRole(actorRole);
+        if (actor == null || actor == User.Role.USER) {
+            throw new UnauthorizedActionException("You are not authorized to view users");
+        }
+
         Optional<User> user = userRepository.findByEmailIgnoreCase(email);
         if (user.isEmpty()) {
             throw new ResourceNotFoundException("User with email " + email + " does not exist");
@@ -70,14 +80,20 @@ public class UsersServiceImplementation implements UsersService {
 
     @Override
     public ResponseEntity<?> createUser(String actorRole, UserDto body) {
+        boolean bootstrap = userRepository.count() == 0;
+
         User.Role actor = parseRole(actorRole);
-        if (actor == null || actor == User.Role.USER) {
+        if (!bootstrap && (actor == null || actor == User.Role.USER)) {
             throw new UnauthorizedActionException("You are not authorized to create users");
         }
 
         User.Role newRole = parseRole(body.getRole());
         if (newRole == null) {
             return ResponseEntity.badRequest().body("Unknown role: " + body.getRole());
+        }
+
+        if (bootstrap && newRole != User.Role.OWNER) {
+            throw new UnauthorizedActionException("The first user in the system must be created with role OWNER");
         }
 
         if (userRepository.existsByEmail(body.getEmail())) {
@@ -88,7 +104,7 @@ public class UsersServiceImplementation implements UsersService {
             throw new DuplicateResourceException("An OWNER already exists in the system");
         }
 
-        if (actor == User.Role.ADMIN && newRole != User.Role.USER) {
+        if (!bootstrap && actor == User.Role.ADMIN && newRole != User.Role.USER) {
             throw new UnauthorizedActionException("ADMIN can only add users with role USER");
         }
 

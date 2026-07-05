@@ -1,12 +1,16 @@
 package com.soas.bank_account_service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soas.bank_account_service.model.BankAccount;
 import com.soas.bank_account_service.repository.BankAccountRepository;
+import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import serviceLibrary.dto.bankAccountService.BankAccountDto;
+import serviceLibrary.dto.usersService.UserDto;
+import serviceLibrary.proxies.usersService.UsersProxy;
 import serviceLibrary.services.bankAccountService.BankAccountService;
 import util.exceptions.DuplicateResourceException;
 import util.exceptions.ResourceNotFoundException;
@@ -23,6 +27,12 @@ public class BankAccountServiceImplementation implements BankAccountService {
 
     @Autowired
     private BankAccountRepository bankAccountRepository;
+
+    @Autowired
+    private UsersProxy usersProxy;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public ResponseEntity<?> getAllAccounts(String actorRole) {
@@ -53,6 +63,8 @@ public class BankAccountServiceImplementation implements BankAccountService {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
             throw new UnauthorizedActionException("Only ADMIN can create bank accounts");
         }
+
+        assertEmailBelongsToUser(body.getEmail());
 
         if (bankAccountRepository.existsByEmailAndCurrencyCode(body.getEmail(), body.getCurrencyCode())) {
             throw new DuplicateResourceException("A bank account for this email and currency already exists");
@@ -114,5 +126,22 @@ public class BankAccountServiceImplementation implements BankAccountService {
 
     private BankAccountDto toDto(BankAccount account) {
         return new BankAccountDto(account.getEmail(), account.getCurrencyCode(), account.getAmount());
+    }
+
+    private void assertEmailBelongsToUser(String email) {
+        UserDto user;
+        try {
+            Object body = usersProxy.getUserByEmail(ROLE_ADMIN, email).getBody();
+            user = objectMapper.convertValue(body, UserDto.class);
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException("No user exists with email " + email);
+        } catch (FeignException e) {
+            throw new ResourceNotFoundException("Could not verify user with email " + email);
+        }
+
+        if (user == null || !"USER".equalsIgnoreCase(user.getRole())) {
+            throw new ResourceNotFoundException(
+                    "User with email " + email + " does not have role USER; bank accounts can only be created for USER accounts");
+        }
     }
 }

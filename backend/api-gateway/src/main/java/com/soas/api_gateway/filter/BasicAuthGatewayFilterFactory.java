@@ -1,5 +1,7 @@
 package com.soas.api_gateway.filter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -19,6 +21,8 @@ import java.util.Map;
 
 @Component
 public class BasicAuthGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
+
+    private static final Logger log = LoggerFactory.getLogger(BasicAuthGatewayFilterFactory.class);
 
     private final WebClient webClient;
 
@@ -72,7 +76,10 @@ public class BasicAuthGatewayFilterFactory extends AbstractGatewayFilterFactory<
                     .onErrorResume(WebClientResponseException.class,
                             e -> unauthorized(exchange, "Invalid email or password"))
                     .onErrorResume(Exception.class,
-                            e -> unauthorized(exchange, "Unable to validate credentials, please try again later"));
+                            e -> {
+                                log.error("Credential validation call to users-service failed", e);
+                                return unauthorized(exchange, "Unable to validate credentials, please try again later");
+                            });
         };
     }
 

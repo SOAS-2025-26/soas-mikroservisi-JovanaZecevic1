@@ -1,12 +1,16 @@
 package com.soas.crypto_wallet_service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soas.crypto_wallet_service.model.CryptoWallet;
 import com.soas.crypto_wallet_service.repository.CryptoWalletRepository;
+import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import serviceLibrary.dto.cryptoWalletService.CryptoWalletDto;
+import serviceLibrary.dto.usersService.UserDto;
+import serviceLibrary.proxies.usersService.UsersProxy;
 import serviceLibrary.services.cryptoWalletService.CryptoWalletService;
 import util.exceptions.DuplicateResourceException;
 import util.exceptions.ResourceNotFoundException;
@@ -23,6 +27,12 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
 
     @Autowired
     private CryptoWalletRepository cryptoWalletRepository;
+
+    @Autowired
+    private UsersProxy usersProxy;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public ResponseEntity<?> getAllWallets(String actorRole) {
@@ -53,6 +63,8 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
             throw new UnauthorizedActionException("Only ADMIN can create crypto wallets");
         }
+
+        assertEmailBelongsToUser(body.getEmail());
 
         if (cryptoWalletRepository.existsByEmailAndCryptoCurrencyCode(body.getEmail(), body.getCryptoCurrencyCode())) {
             throw new DuplicateResourceException("A crypto wallet for this email and currency already exists");
@@ -114,5 +126,22 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
 
     private CryptoWalletDto toDto(CryptoWallet wallet) {
         return new CryptoWalletDto(wallet.getEmail(), wallet.getCryptoCurrencyCode(), wallet.getAmount());
+    }
+
+    private void assertEmailBelongsToUser(String email) {
+        UserDto user;
+        try {
+            Object body = usersProxy.getUserByEmail(ROLE_ADMIN, email).getBody();
+            user = objectMapper.convertValue(body, UserDto.class);
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException("No user exists with email " + email);
+        } catch (FeignException e) {
+            throw new ResourceNotFoundException("Could not verify user with email " + email);
+        }
+
+        if (user == null || !"USER".equalsIgnoreCase(user.getRole())) {
+            throw new ResourceNotFoundException(
+                    "User with email " + email + " does not have role USER; crypto wallets can only be created for USER accounts");
+        }
     }
 }
