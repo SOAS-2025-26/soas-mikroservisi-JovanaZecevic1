@@ -1,0 +1,149 @@
+networks:
+  soas-net:
+    driver: bridge
+
+services:
+
+  naming-server:
+    build:
+      context: ./backend
+      dockerfile: naming-server/Dockerfile
+    container_name: naming-server
+    ports:
+      - "8761:8761"
+    networks:
+      - soas-net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8761'"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 20s
+
+  users-service:
+    build:
+      context: ./backend
+      dockerfile: users-service/Dockerfile
+    container_name: users-service
+    ports:
+      - "8770:8770"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=users-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  bank-account-service:
+    build:
+      context: ./backend
+      dockerfile: bank-account-service/Dockerfile
+    container_name: bank-account-service
+    ports:
+      - "8200:8200"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=bank-account-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  crypto-wallet-service:
+    build:
+      context: ./backend
+      dockerfile: crypto-wallet-service/Dockerfile
+    container_name: crypto-wallet-service
+    ports:
+      - "8300:8300"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=crypto-wallet-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  currency-exchange-service:
+    build:
+      context: ./backend
+      dockerfile: currency-exchange-service/Dockerfile
+    container_name: currency-exchange-service
+    ports:
+      - "8000:8000"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=currency-exchange-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  crypto-exchange-service:
+    build:
+      context: ./backend
+      dockerfile: crypto-exchange-service/Dockerfile
+    container_name: crypto-exchange-service
+    ports:
+      - "8400:8400"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=crypto-exchange-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  currency-conversion-service:
+    build:
+      context: ./backend
+      dockerfile: currency-conversion-service/Dockerfile
+    container_name: currency-conversion-service
+    ports:
+      - "8100:8100"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=currency-conversion-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  trade-service:
+    build:
+      context: ./backend
+      dockerfile: trade-service/Dockerfile
+    container_name: trade-service
+    ports:
+      - "8600:8600"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=trade-service
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8765:8765"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://naming-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=api-gateway
+    networks:
+      - soas-net
+    depends_on:
+      naming-server:
+        condition: service_healthy
