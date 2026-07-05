@@ -16,6 +16,9 @@ import serviceLibrary.dto.usersService.UserDto;
 import serviceLibrary.proxies.bankAccountService.BankAccountProxy;
 import serviceLibrary.proxies.cryptoWalletService.CryptoWalletProxy;
 import serviceLibrary.services.usersService.UsersService;
+import util.exceptions.DuplicateResourceException;
+import util.exceptions.ResourceNotFoundException;
+import util.exceptions.UnauthorizedActionException;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +54,7 @@ public class UsersServiceImplementation implements UsersService {
     public ResponseEntity<?> getUserByEmail(String email) {
         Optional<User> user = userRepository.findByEmailIgnoreCase(email);
         if (user.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with email " + email + " does not exist");
+            throw new ResourceNotFoundException("User with email " + email + " does not exist");
         }
         return ResponseEntity.ok(toDto(user.get()));
     }
@@ -69,7 +72,7 @@ public class UsersServiceImplementation implements UsersService {
     public ResponseEntity<?> createUser(String actorRole, UserDto body) {
         User.Role actor = parseRole(actorRole);
         if (actor == null || actor == User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to create users");
+            throw new UnauthorizedActionException("You are not authorized to create users");
         }
 
         User.Role newRole = parseRole(body.getRole());
@@ -78,15 +81,15 @@ public class UsersServiceImplementation implements UsersService {
         }
 
         if (userRepository.existsByEmail(body.getEmail())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("A user with this email already exists");
+            throw new DuplicateResourceException("A user with this email already exists");
         }
 
         if (newRole == User.Role.OWNER && userRepository.existsByRole(User.Role.OWNER)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("An OWNER already exists in the system");
+            throw new DuplicateResourceException("An OWNER already exists in the system");
         }
 
         if (actor == User.Role.ADMIN && newRole != User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("ADMIN can only add users with role USER");
+            throw new UnauthorizedActionException("ADMIN can only add users with role USER");
         }
 
         User user = new User();
@@ -106,17 +109,17 @@ public class UsersServiceImplementation implements UsersService {
     public ResponseEntity<?> updateUser(String actorRole, UserDto body) {
         User.Role actor = parseRole(actorRole);
         if (actor == null || actor == User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to update users");
+            throw new UnauthorizedActionException("You are not authorized to update users");
         }
 
         Optional<User> existingOpt = userRepository.findByEmail(body.getEmail());
         if (existingOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with email " + body.getEmail() + " does not exist");
+            throw new ResourceNotFoundException("User with email " + body.getEmail() + " does not exist");
         }
         User existing = existingOpt.get();
 
         if (actor == User.Role.ADMIN && existing.getRole() != User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("ADMIN can only update users with role USER");
+            throw new UnauthorizedActionException("ADMIN can only update users with role USER");
         }
 
         User.Role newRole = parseRole(body.getRole());
@@ -125,11 +128,11 @@ public class UsersServiceImplementation implements UsersService {
         }
 
         if (actor == User.Role.ADMIN && newRole != User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("ADMIN can only update users to role USER");
+            throw new UnauthorizedActionException("ADMIN can only update users to role USER");
         }
 
         if (newRole == User.Role.OWNER && existing.getRole() != User.Role.OWNER && userRepository.existsByRole(User.Role.OWNER)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("An OWNER already exists in the system");
+            throw new DuplicateResourceException("An OWNER already exists in the system");
         }
 
         existing.setPassword(body.getPassword());
@@ -143,17 +146,17 @@ public class UsersServiceImplementation implements UsersService {
     public ResponseEntity<?> deleteUser(String actorRole, String email) {
         User.Role actor = parseRole(actorRole);
         if (actor == null || actor == User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to delete users");
+            throw new UnauthorizedActionException("You are not authorized to delete users");
         }
 
         Optional<User> existingOpt = userRepository.findByEmail(email);
         if (existingOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with email " + email + " does not exist");
+            throw new ResourceNotFoundException("User with email " + email + " does not exist");
         }
         User existing = existingOpt.get();
 
         if (actor == User.Role.ADMIN && existing.getRole() != User.Role.USER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("ADMIN can only delete users with role USER");
+            throw new UnauthorizedActionException("ADMIN can only delete users with role USER");
         }
 
         userRepository.delete(existing);

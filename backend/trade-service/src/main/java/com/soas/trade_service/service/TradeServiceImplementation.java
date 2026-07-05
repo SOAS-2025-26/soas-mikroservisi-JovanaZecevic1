@@ -21,6 +21,9 @@ import serviceLibrary.proxies.cryptoExchangeService.CryptoExchangeProxy;
 import serviceLibrary.proxies.cryptoWalletService.CryptoWalletProxy;
 import serviceLibrary.proxies.currencyConversionService.CurrencyConversionProxy;
 import serviceLibrary.services.tradeService.TradeService;
+import util.exceptions.InsufficientFundsException;
+import util.exceptions.ResourceNotFoundException;
+import util.exceptions.UnauthorizedActionException;
 
 import java.util.List;
 import java.util.Map;
@@ -61,7 +64,7 @@ public class TradeServiceImplementation implements TradeService {
     @Override
     public ResponseEntity<?> executeTrade(String actorRole, String actorEmail, String from, String to, double quantity) {
         if (!ROLE_USER.equalsIgnoreCase(actorRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only USER can use trade-service");
+            throw new UnauthorizedActionException("Only USER can use trade-service");
         }
         if (quantity <= 0) {
             return ResponseEntity.badRequest().body("Quantity must be greater than zero");
@@ -91,8 +94,6 @@ public class TradeServiceImplementation implements TradeService {
             return ResponseEntity.status(e.getStatus()).body(e.getMessage());
         } catch (ExternalServiceUnavailableException e) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Trade failed: " + e.getMessage());
         }
     }
 
@@ -102,11 +103,11 @@ public class TradeServiceImplementation implements TradeService {
 
         Optional<CryptoWalletDto> fromWalletOpt = findWallet(wallets, from);
         if (fromWalletOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("You do not have a crypto wallet in currency " + from);
+            throw new ResourceNotFoundException("You do not have a crypto wallet in currency " + from);
         }
         CryptoWalletDto fromWallet = fromWalletOpt.get();
         if (fromWallet.getAmount() < quantity) {
-            return ResponseEntity.badRequest().body("Insufficient funds: you have " + fromWallet.getAmount() + " " + from);
+            throw new InsufficientFundsException("Insufficient funds: you have " + fromWallet.getAmount() + " " + from);
         }
 
         CryptoExchangeDto rate = fetchCryptoExchange(from, to);
@@ -127,11 +128,11 @@ public class TradeServiceImplementation implements TradeService {
 
         Optional<BankAccountDto> fromAccountOpt = findAccount(accounts, from);
         if (fromAccountOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("You do not have a bank account in currency " + from);
+            throw new ResourceNotFoundException("You do not have a bank account in currency " + from);
         }
         BankAccountDto fromAccount = fromAccountOpt.get();
         if (fromAccount.getAmount() < quantity) {
-            return ResponseEntity.badRequest().body("Insufficient funds: you have " + fromAccount.getAmount() + " " + from);
+            throw new InsufficientFundsException("Insufficient funds: you have " + fromAccount.getAmount() + " " + from);
         }
 
         String anchor;
@@ -169,11 +170,11 @@ public class TradeServiceImplementation implements TradeService {
 
         Optional<CryptoWalletDto> fromWalletOpt = findWallet(wallets, from);
         if (fromWalletOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("You do not have a crypto wallet in currency " + from);
+            throw new ResourceNotFoundException("You do not have a crypto wallet in currency " + from);
         }
         CryptoWalletDto fromWallet = fromWalletOpt.get();
         if (fromWallet.getAmount() < quantity) {
-            return ResponseEntity.badRequest().body("Insufficient funds: you have " + fromWallet.getAmount() + " " + from);
+            throw new InsufficientFundsException("Insufficient funds: you have " + fromWallet.getAmount() + " " + from);
         }
 
         String anchor = FIAT_ANCHORS.contains(to) ? to : DEFAULT_ANCHOR;

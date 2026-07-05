@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import serviceLibrary.dto.cryptoWalletService.CryptoWalletDto;
 import serviceLibrary.services.cryptoWalletService.CryptoWalletService;
+import util.exceptions.DuplicateResourceException;
+import util.exceptions.ResourceNotFoundException;
+import util.exceptions.UnauthorizedActionException;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +27,7 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
     @Override
     public ResponseEntity<?> getAllWallets(String actorRole) {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only ADMIN can view all crypto wallets");
+            throw new UnauthorizedActionException("Only ADMIN can view all crypto wallets");
         }
 
         List<CryptoWalletDto> wallets = cryptoWalletRepository.findAll().stream()
@@ -36,7 +39,7 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
     @Override
     public ResponseEntity<?> getWalletByEmail(String actorRole, String actorEmail, String email) {
         if (!isAuthorizedToView(actorRole, actorEmail, email)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to view this crypto wallet");
+            throw new UnauthorizedActionException("You are not authorized to view this crypto wallet");
         }
 
         List<CryptoWalletDto> wallets = cryptoWalletRepository.findByEmail(email).stream()
@@ -48,12 +51,11 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
     @Override
     public ResponseEntity<?> createWallet(String actorRole, CryptoWalletDto body) {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only ADMIN can create crypto wallets");
+            throw new UnauthorizedActionException("Only ADMIN can create crypto wallets");
         }
 
         if (cryptoWalletRepository.existsByEmailAndCryptoCurrencyCode(body.getEmail(), body.getCryptoCurrencyCode())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("A crypto wallet for this email and currency already exists");
+            throw new DuplicateResourceException("A crypto wallet for this email and currency already exists");
         }
 
         CryptoWallet wallet = new CryptoWallet();
@@ -68,13 +70,13 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
     @Override
     public ResponseEntity<?> updateWallet(String actorRole, CryptoWalletDto body) {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only ADMIN can update crypto wallets");
+            throw new UnauthorizedActionException("Only ADMIN can update crypto wallets");
         }
 
         Optional<CryptoWallet> existingOpt = cryptoWalletRepository.findByEmailAndCryptoCurrencyCode(body.getEmail(), body.getCryptoCurrencyCode());
         if (existingOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Crypto wallet for email " + body.getEmail() + " and currency " + body.getCryptoCurrencyCode() + " does not exist");
+            throw new ResourceNotFoundException(
+                    "Crypto wallet for email " + body.getEmail() + " and currency " + body.getCryptoCurrencyCode() + " does not exist");
         }
 
         CryptoWallet existing = existingOpt.get();
@@ -87,13 +89,13 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
     @Override
     public ResponseEntity<?> deleteWallet(String actorRole, String email, String cryptoCurrencyCode) {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only ADMIN can delete crypto wallets");
+            throw new UnauthorizedActionException("Only ADMIN can delete crypto wallets");
         }
 
         Optional<CryptoWallet> existingOpt = cryptoWalletRepository.findByEmailAndCryptoCurrencyCode(email, cryptoCurrencyCode);
         if (existingOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Crypto wallet for email " + email + " and currency " + cryptoCurrencyCode + " does not exist");
+            throw new ResourceNotFoundException(
+                    "Crypto wallet for email " + email + " and currency " + cryptoCurrencyCode + " does not exist");
         }
 
         cryptoWalletRepository.delete(existingOpt.get());

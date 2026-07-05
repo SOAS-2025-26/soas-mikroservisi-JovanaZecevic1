@@ -13,6 +13,9 @@ import serviceLibrary.dto.currencyExchangeService.CurrencyExchangeDto;
 import serviceLibrary.proxies.bankAccountService.BankAccountProxy;
 import serviceLibrary.proxies.currencyExchangeService.CurrencyExchangeProxy;
 import serviceLibrary.services.currencyConversionService.CurrencyConversionService;
+import util.exceptions.InsufficientFundsException;
+import util.exceptions.ResourceNotFoundException;
+import util.exceptions.UnauthorizedActionException;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +38,7 @@ public class CurrencyConversionServiceImplementation implements CurrencyConversi
     @Override
     public ResponseEntity<?> convertCurrency(String actorRole, String actorEmail, String from, String to, double quantity) {
         if (!ROLE_USER.equalsIgnoreCase(actorRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only USER can use currency conversion");
+            throw new UnauthorizedActionException("Only USER can use currency conversion");
         }
 
         if (quantity <= 0) {
@@ -54,12 +57,12 @@ public class CurrencyConversionServiceImplementation implements CurrencyConversi
                 .findFirst();
 
         if (fromAccountOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("You do not have a bank account in currency " + from.toUpperCase());
+            throw new ResourceNotFoundException("You do not have a bank account in currency " + from.toUpperCase());
         }
 
         BankAccountDto fromAccount = fromAccountOpt.get();
         if (fromAccount.getAmount() < quantity) {
-            return ResponseEntity.badRequest().body("Insufficient funds: you have " + fromAccount.getAmount() + " " + from.toUpperCase());
+            throw new InsufficientFundsException("Insufficient funds: you have " + fromAccount.getAmount() + " " + from.toUpperCase());
         }
 
         CurrencyExchangeDto exchange;
