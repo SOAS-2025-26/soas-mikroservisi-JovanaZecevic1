@@ -1,12 +1,20 @@
 package com.soas.users_service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.soas.users_service.model.User;
 import com.soas.users_service.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import serviceLibrary.dto.bankAccountService.BankAccountDto;
+import serviceLibrary.dto.cryptoWalletService.CryptoWalletDto;
 import serviceLibrary.dto.usersService.UserDto;
+import serviceLibrary.proxies.bankAccountService.BankAccountProxy;
+import serviceLibrary.proxies.cryptoWalletService.CryptoWalletProxy;
 import serviceLibrary.services.usersService.UsersService;
 
 import java.util.List;
@@ -15,8 +23,21 @@ import java.util.Optional;
 @RestController
 public class UsersServiceImplementation implements UsersService {
 
+    private static final Logger log = LoggerFactory.getLogger(UsersServiceImplementation.class);
+    private static final String DEFAULT_FIAT_CURRENCY = "EUR";
+    private static final String DEFAULT_CRYPTO_CURRENCY = "ETH";
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BankAccountProxy bankAccountProxy;
+
+    @Autowired
+    private CryptoWalletProxy cryptoWalletProxy;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public ResponseEntity<?> getAllUsers() {
@@ -64,6 +85,10 @@ public class UsersServiceImplementation implements UsersService {
         user.setPassword(body.getPassword());
         user.setRole(newRole);
         User saved = userRepository.save(user);
+
+        if (newRole == User.Role.USER) {
+            provisionAccounts(saved.getEmail());
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
     }
@@ -123,7 +148,64 @@ public class UsersServiceImplementation implements UsersService {
         }
 
         userRepository.delete(existing);
+
+        if (existing.getRole() == User.Role.USER) {
+            deprovisionAccounts(existing.getEmail());
+        }
+
         return ResponseEntity.noContent().build();
+    }
+
+    private void provisionAccounts(String email) {
+        try {
+            bankAccountProxy.createAccount("ADMIN", new BankAccountDto(email, DEFAULT_FIAT_CURRENCY, 0.0));
+        } catch (Exception e) {
+            log.warn("Failed to auto-create bank account for {}: {}", email, e.getMessage());
+        }
+        try {
+            cryptoWalletProxy.createWallet("ADMIN", new CryptoWalletDto(email, DEFAULT_CRYPTO_CURRENCY, 0.0));
+        } catch (Exception e) {
+            log.warn("Failed to auto-create crypto wallet for {}: {}", email, e.getMessage());
+        }
+    }
+
+    private void deprovisionAccounts(String email) {
+        try {
+            List<BankAccountDto> accounts = extractList(
+                    bankAccountProxy.getAccountByEmail("ADMIN", email, email), BankAccountDto.class);
+            for (BankAccountDto account : accounts) {
+                try {
+                    bankAccountProxy.deleteAccount("ADMIN", email, account.getCurrencyCode());
+                } catch (Exception e) {
+                    log.warn("Failed to delete bank account {} for {}: {}", account.getCurrencyCode(), email, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch bank accounts for {}: {}", email, e.getMessage());
+        }
+
+        try {
+            List<CryptoWalletDto> wallets = extractList(
+                    cryptoWalletProxy.getWalletByEmail("ADMIN", email, email), CryptoWalletDto.class);
+            for (CryptoWalletDto wallet : wallets) {
+                try {
+                    cryptoWalletProxy.deleteWallet("ADMIN", email, wallet.getCryptoCurrencyCode());
+                } catch (Exception e) {
+                    log.warn("Failed to delete crypto wallet {} for {}: {}", wallet.getCryptoCurrencyCode(), email, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch crypto wallets for {}: {}", email, e.getMessage());
+        }
+    }
+
+    private <T> List<T> extractList(ResponseEntity<?> response, Class<T> itemType) {
+        Object body = response.getBody();
+        if (body == null) {
+            return List.of();
+        }
+        CollectionType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, itemType);
+        return objectMapper.convertValue(body, listType);
     }
 
     private UserDto toDto(User user) {

@@ -6,9 +6,10 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="service-library" />
         <module name="naming-server" />
       </profile>
-      <profile name="Annotation profile for users-service" enabled="true">
+      <profile name="Annotation profile for crypto-wallet-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -16,12 +17,17 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="users-service" />
+        <module name="crypto-wallet-service" />
+        <module name="bank-account-service" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="bank-account-service" options="-parameters" />
+      <module name="crypto-wallet-service" options="-parameters" />
       <module name="naming-server" options="-parameters" />
+      <module name="service-library" options="-parameters" />
       <module name="users-service" options="-parameters" />
     </option>
   </component>

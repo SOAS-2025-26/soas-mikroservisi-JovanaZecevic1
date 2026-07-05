@@ -6,6 +6,9 @@
       <list>
         <option value="$PROJECT_DIR$/backend/naming-server/pom.xml" />
         <option value="$PROJECT_DIR$/backend/users-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/service-library/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/bank-account-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/crypto-wallet-service/pom.xml" />
       </list>
     </option>
   </component>
