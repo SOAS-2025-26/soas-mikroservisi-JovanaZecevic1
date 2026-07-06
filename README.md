@@ -55,8 +55,8 @@ GET /trade-service?from=...&to=...&quantity=... - razmena fiat/crypto valuta (Ba
 
 Kredencijali korisnika
 
-owner@email.com / owner / OWNER
+owner@gmail.com / owner / OWNER
 
-admin@email.com / admin / ADMIN
+admin@gmail.com / admin / ADMIN
 
-user@email.com / user / USER
+user@gmail.com / user / USER

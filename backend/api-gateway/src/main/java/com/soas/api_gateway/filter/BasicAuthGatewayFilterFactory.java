@@ -1,5 +1,6 @@
 package com.soas.api_gateway.filter;
 
+import com.soas.api_gateway.auth.BasicAuthDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -16,7 +17,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
 
 @Component
@@ -35,29 +35,15 @@ public class BasicAuthGatewayFilterFactory extends AbstractGatewayFilterFactory<
     public GatewayFilter apply(Object config) {
         return (exchange, chain) -> {
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                return unauthorized(exchange, "Missing Basic Authorization header");
+            BasicAuthDecoder.Credentials credentials = BasicAuthDecoder.decode(authHeader);
+            if (credentials == null) {
+                return unauthorized(exchange, "Missing or malformed Basic Authorization header");
             }
 
-            String email;
-            String password;
-            try {
-                String decoded = new String(
-                        Base64.getDecoder().decode(authHeader.substring("Basic ".length()).trim()),
-                        StandardCharsets.UTF_8);
-                int separatorIndex = decoded.indexOf(':');
-                if (separatorIndex < 0) {
-                    return unauthorized(exchange, "Malformed Authorization header");
-                }
-                email = decoded.substring(0, separatorIndex);
-                password = decoded.substring(separatorIndex + 1);
-            } catch (IllegalArgumentException e) {
-                return unauthorized(exchange, "Malformed Authorization header");
-            }
-
-            String finalEmail = email;
+            String finalEmail = credentials.email();
             return webClient.get()
-                    .uri("http://users-service/users/validate?email={email}&password={password}", email, password)
+                    .uri("http://users-service/users/validate?email={email}&password={password}",
+                            credentials.email(), credentials.password())
                     .retrieve()
                     .bodyToMono(Map.class)
                     .flatMap(body -> {
