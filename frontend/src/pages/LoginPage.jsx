@@ -19,9 +19,9 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (err) {
       if (err.response && err.response.status === 401) {
-        setError('Pogrešan email ili lozinka.');
+        setError('Incorrect email or password.');
       } else {
-        setError('Greška pri prijavljivanju. Pokušajte ponovo.');
+        setError('Login failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -30,18 +30,18 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h2>Prijava</h2>
+      <h2>Login</h2>
       <form onSubmit={handleSubmit}>
         <div>
           <label>Email:</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div>
-          <label>Lozinka:</label>
+          <label>Password:</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         <button type="submit" disabled={loading}>
-          {loading ? 'Prijavljivanje...' : 'Prijavi se'}
+          {loading ? 'Logging in...' : 'Log in'}
         </button>
       </form>
       {error && <p style={{ color: 'red' }}>{error}</p>}

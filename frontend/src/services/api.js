@@ -28,4 +28,18 @@ export function basicAuthHeader(email, password) {
   return { Authorization: `Basic ${btoa(`${email}:${password}`)}` };
 }
 
+export function getErrorMessage(err) {
+  if (err.response) {
+    const data = err.response.data;
+    if (data && typeof data === 'object' && data.message) {
+      return data.message;
+    }
+    if (typeof data === 'string' && data.length > 0) {
+      return data;
+    }
+    return `Error (${err.response.status})`;
+  }
+  return err.message || 'Unknown error';
+}
+
 export default api;

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RestController;
 import serviceLibrary.dto.bankAccountService.BankAccountDto;
 import serviceLibrary.dto.cryptoWalletService.CryptoWalletDto;
@@ -29,6 +30,8 @@ public class UsersServiceImplementation implements UsersService {
     private static final Logger log = LoggerFactory.getLogger(UsersServiceImplementation.class);
     private static final String DEFAULT_FIAT_CURRENCY = "EUR";
     private static final String DEFAULT_CRYPTO_CURRENCY = "ETH";
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Autowired
     private UserRepository userRepository;
@@ -72,7 +75,7 @@ public class UsersServiceImplementation implements UsersService {
     @Override
     public ResponseEntity<?> validateCredentials(String email, String password) {
         Optional<User> user = userRepository.findByEmailIgnoreCase(email);
-        if (user.isEmpty() || !user.get().getPassword().equals(password)) {
+        if (user.isEmpty() || !passwordEncoder.matches(password, user.get().getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
         }
         return ResponseEntity.ok(toDto(user.get()));
@@ -110,7 +113,7 @@ public class UsersServiceImplementation implements UsersService {
 
         User user = new User();
         user.setEmail(body.getEmail());
-        user.setPassword(body.getPassword());
+        user.setPassword(passwordEncoder.encode(body.getPassword()));
         user.setRole(newRole);
         User saved = userRepository.save(user);
 
@@ -151,7 +154,9 @@ public class UsersServiceImplementation implements UsersService {
             throw new DuplicateResourceException("An OWNER already exists in the system");
         }
 
-        existing.setPassword(body.getPassword());
+        if (body.getPassword() != null && !body.getPassword().isBlank()) {
+            existing.setPassword(passwordEncoder.encode(body.getPassword()));
+        }
         existing.setRole(newRole);
         User saved = userRepository.save(existing);
 

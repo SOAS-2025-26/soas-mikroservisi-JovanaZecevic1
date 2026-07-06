@@ -17,7 +17,7 @@ function RateForm({ title, endpoint, defaultFrom, defaultTo }) {
     } catch (err) {
       setError(
         (err.response && (err.response.data?.message || err.response.data)) ||
-          'Greška prilikom dobavljanja kursa.'
+          'Failed to fetch exchange rate.'
       );
     }
   }
@@ -26,11 +26,11 @@ function RateForm({ title, endpoint, defaultFrom, defaultTo }) {
     <div>
       <h3>{title}</h3>
       <form onSubmit={handleSubmit}>
-        <label>Iz:</label>
+        <label>From:</label>
         <input value={from} onChange={(e) => setFrom(e.target.value)} required />
-        <label>U:</label>
+        <label>To:</label>
         <input value={to} onChange={(e) => setTo(e.target.value)} required />
-        <button type="submit">Proveri kurs</button>
+        <button type="submit">Check rate</button>
       </form>
       {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
       {error && <p style={{ color: 'red' }}>{String(error)}</p>}
@@ -41,15 +41,15 @@ function RateForm({ title, endpoint, defaultFrom, defaultTo }) {
 export default function ExchangeRatesPage() {
   return (
     <div>
-      <h2>Kursevi valuta</h2>
+      <h2>Exchange rates</h2>
       <RateForm
-        title="Fiat valute (currency-exchange)"
+        title="Fiat currencies (currency-exchange)"
         endpoint="/currency-exchange"
         defaultFrom="EUR"
         defaultTo="RSD"
       />
       <RateForm
-        title="Crypto valute (crypto-exchange)"
+        title="Crypto currencies (crypto-exchange)"
         endpoint="/crypto-exchange"
         defaultFrom="BTC"
         defaultTo="USD"

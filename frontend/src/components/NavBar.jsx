@@ -12,7 +12,7 @@ export default function NavBar() {
 
   return (
     <nav>
-      <Link to="/">Kursevi</Link>
+      <Link to="/">Exchange rates</Link>
       {' | '}
       {isAuthenticated ? (
         <>
@@ -20,10 +20,10 @@ export default function NavBar() {
           {' | '}
           <span>{user.email} ({user.role})</span>
           {' | '}
-          <button onClick={handleLogout}>Odjava</button>
+          <button onClick={handleLogout}>Log out</button>
         </>
       ) : (
-        <Link to="/login">Prijava</Link>
+        <Link to="/login">Log in</Link>
       )}
     </nav>
   );
