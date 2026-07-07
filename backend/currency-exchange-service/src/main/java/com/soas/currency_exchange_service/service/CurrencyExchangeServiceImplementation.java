@@ -1,5 +1,7 @@
 package com.soas.currency_exchange_service.service;
 
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +15,11 @@ import serviceLibrary.services.currencyExchangeService.CurrencyExchangeService;
 public class CurrencyExchangeServiceImplementation implements CurrencyExchangeService {
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final Retry retry;
+
+    public CurrencyExchangeServiceImplementation(RetryRegistry retryRegistry) {
+        this.retry = retryRegistry.retry("floatrates");
+    }
 
     @Override
     public ResponseEntity<?> getExchange(String from, String to) {
@@ -20,14 +27,16 @@ public class CurrencyExchangeServiceImplementation implements CurrencyExchangeSe
 
         MultipleCurrenciesStructure response;
         try {
-            response = restTemplate.getForEntity(apiUrl, MultipleCurrenciesStructure.class).getBody();
+            response = retry.executeSupplier(() ->
+                    restTemplate.getForEntity(apiUrl, MultipleCurrenciesStructure.class).getBody());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body("Failed to fetch exchange rates for " + from + ": " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("Currency exchange rate service is temporarily unavailable");
         }
 
         if (response == null) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Empty response from exchange rate provider");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("Currency exchange rate service is temporarily unavailable");
         }
 
         SingleCurrencyStructure target = response.getCurrencies().get(to.toLowerCase());

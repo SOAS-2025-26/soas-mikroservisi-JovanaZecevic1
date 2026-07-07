@@ -150,7 +150,6 @@ public class TradeServiceImplementation implements TradeService {
             bankAccountProxy.updateAccount(SYSTEM_ROLE, new BankAccountDto(actorEmail, anchor, priorAnchorAmount));
         }
 
-        // crypto-exchange-service only quotes crypto->(fiat|crypto); fetch BTC-per-anchor and invert
         CryptoExchangeDto rate = fetchCryptoExchange(to, anchor);
         double cryptoAmount = anchorAmount / rate.getRate();
 

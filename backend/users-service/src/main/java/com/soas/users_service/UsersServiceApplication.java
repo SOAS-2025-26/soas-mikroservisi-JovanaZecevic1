@@ -23,8 +23,6 @@ public class UsersServiceApplication {
 		SpringApplication.run(UsersServiceApplication.class, args);
 	}
 
-	// Dev/testing convenience only: guarantees the 3 baseline accounts always
-	// exist right after startup, without limiting further createUser calls.
 	@Bean
 	CommandLineRunner seedDefaultTestUsers(UserRepository userRepository, UsersService usersService) {
 		return args -> {

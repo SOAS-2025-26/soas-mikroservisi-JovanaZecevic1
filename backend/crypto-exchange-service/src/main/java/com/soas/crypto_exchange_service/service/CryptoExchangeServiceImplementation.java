@@ -1,5 +1,7 @@
 package com.soas.crypto_exchange_service.service;
 
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -48,12 +50,17 @@ public class CryptoExchangeServiceImplementation implements CryptoExchangeServic
     );
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final Retry retry;
+
+    public CryptoExchangeServiceImplementation(RetryRegistry retryRegistry) {
+        this.retry = retryRegistry.retry("coingecko");
+    }
 
     @Override
     public ResponseEntity<?> getExchange(String from, String to) {
         String fromId = SYMBOL_TO_COINGECKO_ID.get(from.toUpperCase());
         if (fromId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unsupported cryptocurrency: " + from);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unsupported currency: " + from);
         }
 
         String vsCurrency = to.toLowerCase();
@@ -62,12 +69,12 @@ public class CryptoExchangeServiceImplementation implements CryptoExchangeServic
 
         Map<String, Map<String, Double>> response;
         try {
-            ResponseEntity<Map<String, Map<String, Double>>> result = restTemplate.exchange(
-                    apiUrl, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
-            response = result.getBody();
+            response = retry.executeSupplier(() -> restTemplate.exchange(
+                    apiUrl, HttpMethod.GET, null,
+                    new ParameterizedTypeReference<Map<String, Map<String, Double>>>() {}).getBody());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body("Failed to fetch exchange rate for " + from + ": " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("Crypto exchange rate service is temporarily unavailable");
         }
 
         Map<String, Double> rates = response != null ? response.get(fromId) : null;
