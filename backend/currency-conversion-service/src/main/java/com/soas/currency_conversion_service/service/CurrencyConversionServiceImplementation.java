@@ -2,13 +2,13 @@ package com.soas.currency_conversion_service.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.soas.currency_conversion_service.dto.ConversionResultDto;
 import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import serviceLibrary.dto.bankAccountService.BankAccountDto;
+import serviceLibrary.dto.currencyConversionService.ConversionResultDto;
 import serviceLibrary.dto.currencyExchangeService.CurrencyExchangeDto;
 import serviceLibrary.proxies.bankAccountService.BankAccountProxy;
 import serviceLibrary.proxies.currencyExchangeService.CurrencyExchangeProxy;

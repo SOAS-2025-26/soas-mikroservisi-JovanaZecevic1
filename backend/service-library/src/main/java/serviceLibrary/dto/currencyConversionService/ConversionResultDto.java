@@ -1,4 +1,4 @@
-package com.soas.currency_conversion_service.dto;
+package serviceLibrary.dto.currencyConversionService;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

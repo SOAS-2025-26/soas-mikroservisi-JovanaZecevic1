@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import serviceLibrary.dto.bankAccountService.BankAccountDto;
+import serviceLibrary.dto.currencyConversionService.ConversionResultDto;
 import serviceLibrary.dto.cryptoExchangeService.CryptoExchangeDto;
 import serviceLibrary.dto.cryptoWalletService.CryptoWalletDto;
 import serviceLibrary.proxies.bankAccountService.BankAccountProxy;
@@ -24,9 +25,10 @@ import serviceLibrary.services.tradeService.TradeService;
 import util.exceptions.InsufficientFundsException;
 import util.exceptions.ResourceNotFoundException;
 import util.exceptions.UnauthorizedActionException;
+import util.handler.ErrorResponse;
 
+import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -67,13 +69,13 @@ public class TradeServiceImplementation implements TradeService {
             throw new UnauthorizedActionException("Only USER can use trade-service");
         }
         if (quantity <= 0) {
-            return ResponseEntity.badRequest().body("Quantity must be greater than zero");
+            return errorResponse(HttpStatus.BAD_REQUEST, "Quantity must be greater than zero");
         }
 
         String fromCode = from.toUpperCase();
         String toCode = to.toUpperCase();
         if (fromCode.equals(toCode)) {
-            return ResponseEntity.badRequest().body("Cannot exchange a currency for itself");
+            return errorResponse(HttpStatus.BAD_REQUEST, "Cannot exchange a currency for itself");
         }
 
         boolean fromCrypto = CRYPTO_SYMBOLS.contains(fromCode);
@@ -89,12 +91,16 @@ public class TradeServiceImplementation implements TradeService {
             if (fromCrypto) {
                 return cryptoToFiat(actorEmail, fromCode, toCode, quantity);
             }
-            return ResponseEntity.badRequest().body("Both currencies are fiat; use currency-conversion for fiat-to-fiat exchange");
+            return errorResponse(HttpStatus.BAD_REQUEST, "Both currencies are fiat; use currency-conversion for fiat-to-fiat exchange");
         } catch (TradeBusinessException e) {
-            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+            return errorResponse(e.getStatus(), e.getMessage());
         } catch (ExternalServiceUnavailableException e) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(e.getMessage());
+            return errorResponse(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
         }
+    }
+
+    private ResponseEntity<ErrorResponse> errorResponse(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(new ErrorResponse(status.value(), message, Instant.now().toString()));
     }
 
     private ResponseEntity<?> cryptoToCrypto(String actorEmail, String from, String to, double quantity) {
@@ -253,7 +259,8 @@ public class TradeServiceImplementation implements TradeService {
         return cb.run(
                 () -> {
                     Object body = currencyConversionProxy.convertCurrency(ROLE_USER, actorEmail, from, to, quantity).getBody();
-                    return extractAccountsFromConversionResult(body);
+                    ConversionResultDto result = objectMapper.convertValue(body, ConversionResultDto.class);
+                    return result.getAccounts();
                 },
                 throwable -> {
                     throw translate(throwable, "Currency conversion service is currently unavailable, please try again later");
@@ -270,19 +277,6 @@ public class TradeServiceImplementation implements TradeService {
             return new TradeBusinessException(HttpStatus.valueOf(fe.status()), message);
         }
         return new ExternalServiceUnavailableException(unavailableMessage);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<BankAccountDto> extractAccountsFromConversionResult(Object body) {
-        if (!(body instanceof Map<?, ?> map)) {
-            return List.of();
-        }
-        Object accountsRaw = map.get("accounts");
-        if (accountsRaw == null) {
-            return List.of();
-        }
-        CollectionType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, BankAccountDto.class);
-        return objectMapper.convertValue(accountsRaw, listType);
     }
 
     private <T> List<T> extractList(ResponseEntity<?> response, Class<T> itemType) {
