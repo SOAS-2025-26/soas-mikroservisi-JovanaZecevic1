@@ -35,6 +35,10 @@ services:
     depends_on:
       naming-server:
         condition: service_healthy
+      bank-account-service:
+        condition: service_healthy
+      crypto-wallet-service:
+        condition: service_healthy
 
   bank-account-service:
     build:
@@ -51,6 +55,12 @@ services:
     depends_on:
       naming-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8200'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
 
   crypto-wallet-service:
     build:
@@ -67,6 +77,12 @@ services:
     depends_on:
       naming-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8300'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
 
   currency-exchange-service:
     build:

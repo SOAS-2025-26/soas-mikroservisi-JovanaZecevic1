@@ -1,6 +1,7 @@
 package com.soas.users_service;
 
 import com.soas.users_service.repository.UserRepository;
+import com.soas.users_service.service.UsersServiceImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -10,7 +11,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import serviceLibrary.dto.usersService.UserDto;
-import serviceLibrary.services.usersService.UsersService;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.soas.users_service", "util"})
@@ -24,7 +24,7 @@ public class UsersServiceApplication {
 	}
 
 	@Bean
-	CommandLineRunner seedDefaultTestUsers(UserRepository userRepository, UsersService usersService) {
+	CommandLineRunner seedDefaultTestUsers(UserRepository userRepository, UsersServiceImplementation usersService) {
 		return args -> {
 			seedIfMissing(userRepository, usersService, "owner@gmail.com", "owner", "OWNER");
 			seedIfMissing(userRepository, usersService, "admin@gmail.com", "admin", "ADMIN");
@@ -34,7 +34,7 @@ public class UsersServiceApplication {
 		};
 	}
 
-	private void seedIfMissing(UserRepository userRepository, UsersService usersService,
+	private void seedIfMissing(UserRepository userRepository, UsersServiceImplementation usersService,
 								String email, String password, String role) {
 		if (userRepository.existsByEmail(email)) {
 			return;

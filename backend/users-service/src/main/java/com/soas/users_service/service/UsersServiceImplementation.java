@@ -193,16 +193,36 @@ public class UsersServiceImplementation implements UsersService {
         return ResponseEntity.noContent().build();
     }
 
+    private static final int PROVISION_MAX_ATTEMPTS = 8;
+    private static final long PROVISION_RETRY_DELAY_MS = 2000;
+
     private void provisionAccounts(String email) {
-        try {
-            bankAccountProxy.createAccount("ADMIN", new BankAccountDto(email, DEFAULT_FIAT_CURRENCY, 0.0));
-        } catch (Exception e) {
-            log.warn("Failed to auto-create bank account for {}: {}", email, e.getMessage());
-        }
-        try {
-            cryptoWalletProxy.createWallet("ADMIN", new CryptoWalletDto(email, DEFAULT_CRYPTO_CURRENCY, 0.0));
-        } catch (Exception e) {
-            log.warn("Failed to auto-create crypto wallet for {}: {}", email, e.getMessage());
+        runWithRetry(
+                () -> bankAccountProxy.createAccount("ADMIN", new BankAccountDto(email, DEFAULT_FIAT_CURRENCY, 0.0)),
+                "auto-create bank account for " + email);
+        runWithRetry(
+                () -> cryptoWalletProxy.createWallet("ADMIN", new CryptoWalletDto(email, DEFAULT_CRYPTO_CURRENCY, 0.0)),
+                "auto-create crypto wallet for " + email);
+    }
+
+    private void runWithRetry(Runnable action, String description) {
+        for (int attempt = 1; attempt <= PROVISION_MAX_ATTEMPTS; attempt++) {
+            try {
+                action.run();
+                return;
+            } catch (Exception e) {
+                if (attempt == PROVISION_MAX_ATTEMPTS) {
+                    log.warn("Failed to {} after {} attempts: {}", description, attempt, e.getMessage());
+                    return;
+                }
+                try {
+                    Thread.sleep(PROVISION_RETRY_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Interrupted while retrying {}: {}", description, e.getMessage());
+                    return;
+                }
+            }
         }
     }
 
