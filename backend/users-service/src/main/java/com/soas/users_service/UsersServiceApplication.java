@@ -29,6 +29,8 @@ public class UsersServiceApplication {
 			seedIfMissing(userRepository, usersService, "owner@gmail.com", "owner", "OWNER");
 			seedIfMissing(userRepository, usersService, "admin@gmail.com", "admin", "ADMIN");
 			seedIfMissing(userRepository, usersService, "user@gmail.com", "user", "USER");
+			seedIfMissing(userRepository, usersService, "user1@gmail.com", "user1", "USER");
+			seedIfMissing(userRepository, usersService, "user2@gmail.com", "user2", "USER");
 		};
 	}
 

@@ -60,3 +60,7 @@ owner@gmail.com / owner / OWNER
 admin@gmail.com / admin / ADMIN
 
 user@gmail.com / user / USER
+
+user1@gmail.com / user1 / USER
+
+user2@gmail.com / user2 / USER
