@@ -28,7 +28,6 @@ export default function UsersManagement({ mode, size, onUsersChanged }) {
     if (!availableRoles.includes(formRole)) {
       setFormRole(availableRoles[0]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableRoles.join(',')]);
 
   async function loadUsers() {
@@ -46,7 +45,6 @@ export default function UsersManagement({ mode, size, onUsersChanged }) {
 
   useEffect(() => {
     loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const visibleUsers = mode === 'admin' ? users.filter((u) => u.role === 'USER') : users;
@@ -91,8 +89,6 @@ export default function UsersManagement({ mode, size, onUsersChanged }) {
       }
       resetForm();
       await loadUsers();
-      // A new USER gets an auto-provisioned bank account + crypto wallet on the
-      // backend, so the account/wallet tables on this same dashboard need reloading.
       if (isNewUser) {
         onUsersChanged?.();
       }

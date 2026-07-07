@@ -13,8 +13,6 @@ async function fetchFiatRate(from, to) {
   return res.data.rate;
 }
 
-// Read-only estimate for the UI only; never mutates any balance. Mirrors the
-// backend's own USD-anchor pivot for pairs crypto-exchange can't quote directly.
 async function computePreview(from, to, quantity) {
   const fromCrypto = CRYPTO_CURRENCIES.includes(from);
   const toCrypto = CRYPTO_CURRENCIES.includes(to);

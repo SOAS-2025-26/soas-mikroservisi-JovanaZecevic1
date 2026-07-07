@@ -84,7 +84,7 @@ function FiatRateForm() {
           </span>
         </p>
       )}
-      {error && <p className="alert alert-error">{String(error)}</p>}
+      {error && <p className="alert alert-error">{error}</p>}
     </div>
   );
 }
@@ -162,7 +162,7 @@ function CryptoRateForm() {
           </span>
         </p>
       )}
-      {error && <p className="alert alert-error">{String(error)}</p>}
+      {error && <p className="alert alert-error">{error}</p>}
     </div>
   );
 }
@@ -177,8 +177,6 @@ async function fetchRate(pair) {
   return res.data.rate;
 }
 
-// Rate providers (esp. CoinGecko) occasionally 429/502 on transient rate limits,
-// so each pair gets one retry after a short delay before giving up.
 async function fetchRateWithRetry(pair) {
   try {
     return await fetchRate(pair);

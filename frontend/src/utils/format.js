@@ -1,7 +1,3 @@
-// Always shows exactly 2 decimals with thousands separators. The one exception:
-// if rounding to 2 decimals would collapse the value to "0.00" (abs < 0.01),
-// decimals are extended (up to 6) until the first significant digit is visible -
-// otherwise small crypto ratios would silently lose all their information.
 export function formatNumber(value) {
   const num = Number(value);
   if (Number.isNaN(num)) return '';
@@ -21,9 +17,6 @@ export function formatNumber(value) {
   });
 }
 
-// Same rounding rule as formatNumber (2 decimals, extended up to 6 for sub-0.01
-// values), but returns a plain dot-decimal string with no thousands separator -
-// safe to drop straight into a number input's value.
 export function roundForInput(value) {
   const num = Number(value);
   if (Number.isNaN(num)) return '';

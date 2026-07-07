@@ -11,8 +11,8 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
   const [loading, setLoading] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingKey, setEditingKey] = useState(null); // `${email}|${cryptoCurrencyCode}`
-  const [pendingDelete, setPendingDelete] = useState(null); // { email, cryptoCurrencyCode }
+  const [editingKey, setEditingKey] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
   const [formEmail, setFormEmail] = useState('');
   const [formCurrency, setFormCurrency] = useState('');
   const [formAmount, setFormAmount] = useState('');
@@ -39,7 +39,6 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
 
   useEffect(() => {
     loadWallets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshSignal]);
 
   function resetForm() {

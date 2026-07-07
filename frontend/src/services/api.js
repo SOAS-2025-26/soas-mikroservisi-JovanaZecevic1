@@ -32,11 +32,6 @@ function looksTechnical(text) {
   return text.length > 150 || /https?:\/\//.test(text) || /error_code|exception|stack ?trace/i.test(text);
 }
 
-// Only the backend's own {status, message, timestamp} shape (and short, clearly
-// human-written plain-text bodies) are trusted for direct display. Anything else -
-// raw exception text, an external API's error body, a 5xx from an upstream
-// dependency like CoinGecko - is replaced with a generic message so technical
-// details never reach the user.
 export function getErrorMessage(err) {
   if (err.response) {
     const { status, data } = err.response;

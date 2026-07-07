@@ -11,8 +11,8 @@ export default function BankAccounts({ mode, refreshSignal, size }) {
   const [loading, setLoading] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingKey, setEditingKey] = useState(null); // `${email}|${currencyCode}`
-  const [pendingDelete, setPendingDelete] = useState(null); // { email, currencyCode }
+  const [editingKey, setEditingKey] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
   const [formEmail, setFormEmail] = useState('');
   const [formCurrency, setFormCurrency] = useState('');
   const [formAmount, setFormAmount] = useState('');
@@ -39,7 +39,6 @@ export default function BankAccounts({ mode, refreshSignal, size }) {
 
   useEffect(() => {
     loadAccounts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshSignal]);
 
   function resetForm() {
