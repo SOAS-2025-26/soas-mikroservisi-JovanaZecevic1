@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api, { getErrorMessage } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatNumber, roundForInput } from '../utils/format';
+import { CRYPTO_CURRENCIES } from '../constants/currencies';
 import ConfirmDialog from './ConfirmDialog';
 
 export default function CryptoWallets({ mode, refreshSignal, size }) {
@@ -14,7 +15,7 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
   const [editingKey, setEditingKey] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [formEmail, setFormEmail] = useState('');
-  const [formCurrency, setFormCurrency] = useState('');
+  const [formCurrency, setFormCurrency] = useState(CRYPTO_CURRENCIES[0]);
   const [formAmount, setFormAmount] = useState('');
 
   const isFormOpen = showAddForm || !!editingKey;
@@ -46,7 +47,7 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
     setShowAddForm(false);
     setEditingKey(null);
     setFormEmail('');
-    setFormCurrency('');
+    setFormCurrency(CRYPTO_CURRENCIES[0]);
     setFormAmount('');
   }
 
@@ -54,7 +55,7 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
     setError('');
     setEditingKey(null);
     setFormEmail('');
-    setFormCurrency('');
+    setFormCurrency(CRYPTO_CURRENCIES[0]);
     setFormAmount('');
     setShowAddForm(true);
   }
@@ -206,9 +207,8 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
               </div>
               <div className="form-group">
                 <label>Crypto currency</label>
-                <input
+                <select
                   className="input"
-                  type="text"
                   value={formCurrency}
                   onChange={(e) => {
                     setError('');
@@ -216,7 +216,13 @@ export default function CryptoWallets({ mode, refreshSignal, size }) {
                   }}
                   disabled={!!editingKey}
                   required
-                />
+                >
+                  {CRYPTO_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Amount</label>
