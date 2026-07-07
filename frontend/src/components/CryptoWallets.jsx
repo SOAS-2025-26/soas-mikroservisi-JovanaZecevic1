@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
 import api, { getErrorMessage } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { formatNumber, roundForInput } from '../utils/format';
+import ConfirmDialog from './ConfirmDialog';
 
-export default function CryptoWallets({ mode }) {
+export default function CryptoWallets({ mode, refreshSignal, size }) {
   const { user } = useAuth();
   const [wallets, setWallets] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [showAddForm, setShowAddForm] = useState(false);
   const [editingKey, setEditingKey] = useState(null); // `${email}|${cryptoCurrencyCode}`
+  const [pendingDelete, setPendingDelete] = useState(null); // { email, cryptoCurrencyCode }
   const [formEmail, setFormEmail] = useState('');
   const [formCurrency, setFormCurrency] = useState('');
   const [formAmount, setFormAmount] = useState('');
+
+  const isFormOpen = showAddForm || !!editingKey;
 
   async function loadWallets() {
     setLoading(true);
@@ -34,20 +40,33 @@ export default function CryptoWallets({ mode }) {
   useEffect(() => {
     loadWallets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshSignal]);
 
   function resetForm() {
+    setError('');
+    setShowAddForm(false);
     setEditingKey(null);
     setFormEmail('');
     setFormCurrency('');
     setFormAmount('');
   }
 
+  function startAdd() {
+    setError('');
+    setEditingKey(null);
+    setFormEmail('');
+    setFormCurrency('');
+    setFormAmount('');
+    setShowAddForm(true);
+  }
+
   function startEdit(w) {
+    setError('');
+    setShowAddForm(false);
     setEditingKey(`${w.email}|${w.cryptoCurrencyCode}`);
     setFormEmail(w.email);
     setFormCurrency(w.cryptoCurrencyCode);
-    setFormAmount(w.amount);
+    setFormAmount(roundForInput(w.amount));
   }
 
   async function handleSubmit(e) {
@@ -77,82 +96,169 @@ export default function CryptoWallets({ mode }) {
     }
   }
 
+  function confirmDelete() {
+    const { email, cryptoCurrencyCode } = pendingDelete;
+    setPendingDelete(null);
+    handleDelete(email, cryptoCurrencyCode);
+  }
+
+  const groupedWallets =
+    mode === 'admin'
+      ? Object.entries(
+          wallets.reduce((acc, w) => {
+            (acc[w.email] ||= []).push(w);
+            return acc;
+          }, {})
+        )
+      : null;
+
   return (
-    <div>
-      <h3>{mode === 'admin' ? 'Crypto wallets (all)' : 'My crypto wallet'}</h3>
+    <div className={size === 'lg' ? 'card card-lg' : 'card'}>
+      <h3 className="section-title">{mode === 'admin' ? 'Crypto wallets' : 'My Crypto Wallet'}</h3>
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {loading && <p className="muted">Loading...</p>}
+      {error && <p className="alert alert-error">{error}</p>}
 
-      <table border="1" cellPadding="4">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Currency</th>
-            <th>Balance</th>
-            {mode === 'admin' && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {wallets.map((w) => (
-            <tr key={`${w.email}|${w.cryptoCurrencyCode}`}>
-              <td>{w.email}</td>
-              <td>{w.cryptoCurrencyCode}</td>
-              <td>{w.amount}</td>
-              {mode === 'admin' && (
-                <td>
-                  <button onClick={() => startEdit(w)}>Edit</button>
-                  <button onClick={() => handleDelete(w.email, w.cryptoCurrencyCode)}>Delete</button>
-                </td>
-              )}
+      {mode === 'admin' ? (
+        groupedWallets.length === 0 ? (
+          <p className="muted">No wallets yet.</p>
+        ) : (
+          groupedWallets.map(([email, rows]) => (
+            <div className="grouped-table" key={email}>
+              <h4 className="group-heading">{email}</h4>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Currency</th>
+                    <th>Balance</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((w) => (
+                    <tr key={`${w.email}|${w.cryptoCurrencyCode}`}>
+                      <td>{w.cryptoCurrencyCode}</td>
+                      <td>{formatNumber(w.amount)}</td>
+                      <td>
+                        <button className="btn btn-secondary" onClick={() => startEdit(w)}>
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => setPendingDelete({ email: w.email, cryptoCurrencyCode: w.cryptoCurrencyCode })}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
+        )
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Currency</th>
+              <th>Balance</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {mode === 'admin' && (
-        <>
-          <h4>{editingKey ? `Editing wallet: ${editingKey}` : 'Add wallet'}</h4>
-          <form onSubmit={handleSubmit}>
-            <div>
-              <label>Email:</label>
-              <input
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                disabled={!!editingKey}
-                required
-              />
-            </div>
-            <div>
-              <label>Crypto currency:</label>
-              <input
-                type="text"
-                value={formCurrency}
-                onChange={(e) => setFormCurrency(e.target.value)}
-                disabled={!!editingKey}
-                required
-              />
-            </div>
-            <div>
-              <label>Amount:</label>
-              <input
-                type="number"
-                step="any"
-                value={formAmount}
-                onChange={(e) => setFormAmount(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit">{editingKey ? 'Save changes' : 'Add wallet'}</button>
-            {editingKey && (
-              <button type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            )}
-          </form>
-        </>
+          </thead>
+          <tbody>
+            {wallets.map((w) => (
+              <tr key={`${w.email}|${w.cryptoCurrencyCode}`}>
+                <td>{w.cryptoCurrencyCode}</td>
+                <td>{formatNumber(w.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
+
+      {mode === 'admin' && !isFormOpen && (
+        <div className="add-toggle-wrapper">
+          <button className="btn btn-success" onClick={startAdd}>
+            + Add wallet
+          </button>
+        </div>
+      )}
+
+      {mode === 'admin' && isFormOpen && (
+        <div className="entity-form-wrapper">
+          <div className={editingKey ? 'entity-form entity-form-editing' : 'entity-form'}>
+            <h4 className={editingKey ? 'entity-form-title entity-form-title-editing' : 'entity-form-title'}>
+              {editingKey ? `Editing wallet: ${editingKey}` : 'Add new wallet'}
+            </h4>
+            <form className="form-inline" onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  className="input"
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => {
+                    setError('');
+                    setFormEmail(e.target.value);
+                  }}
+                  disabled={!!editingKey}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Crypto currency</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={formCurrency}
+                  onChange={(e) => {
+                    setError('');
+                    setFormCurrency(e.target.value);
+                  }}
+                  disabled={!!editingKey}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Amount</label>
+                <input
+                  className="input"
+                  type="number"
+                  step="any"
+                  value={formAmount}
+                  onChange={(e) => {
+                    setError('');
+                    setFormAmount(e.target.value);
+                  }}
+                  required
+                />
+              </div>
+              <div className="form-inline-action">
+                <label className="spacer-label">Action</label>
+                <div>
+                  <button className={editingKey ? 'btn btn-primary' : 'btn btn-success'} type="submit">
+                    {editingKey ? 'Save changes' : 'Add wallet'}
+                  </button>
+                  <button className="btn btn-secondary" type="button" onClick={resetForm}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete wallet"
+        message={
+          pendingDelete &&
+          `Are you sure you want to delete the ${pendingDelete.cryptoCurrencyCode} wallet for ${pendingDelete.email}?`
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

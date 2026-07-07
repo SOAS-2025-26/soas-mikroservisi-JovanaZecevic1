@@ -11,18 +11,20 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <NavBar />
-        <Routes>
-          <Route path="/" element={<ExchangeRatesPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <div className="app-container">
+          <Routes>
+            <Route path="/" element={<ExchangeRatesPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </div>
       </AuthProvider>
     </BrowserRouter>
   );

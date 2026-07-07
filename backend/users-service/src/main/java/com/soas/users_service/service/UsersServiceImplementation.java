@@ -1,7 +1,7 @@
 package com.soas.users_service.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import com.soas.users_service.model.User;
 import com.soas.users_service.repository.UserRepository;
 import org.slf4j.Logger;
@@ -164,10 +164,14 @@ public class UsersServiceImplementation implements UsersService {
     }
 
     @Override
-    public ResponseEntity<?> deleteUser(String actorRole, String email) {
+    public ResponseEntity<?> deleteUser(String actorRole, String actorEmail, String email) {
         User.Role actor = parseRole(actorRole);
         if (actor == null || actor == User.Role.USER) {
             throw new UnauthorizedActionException("You are not authorized to delete users");
+        }
+
+        if (actorEmail != null && actorEmail.equalsIgnoreCase(email)) {
+            throw new UnauthorizedActionException("You cannot delete your own account");
         }
 
         Optional<User> existingOpt = userRepository.findByEmail(email);
@@ -204,8 +208,7 @@ public class UsersServiceImplementation implements UsersService {
 
     private void deprovisionAccounts(String email) {
         try {
-            List<BankAccountDto> accounts = extractList(
-                    bankAccountProxy.getAccountByEmail("ADMIN", email, email), BankAccountDto.class);
+            List<BankAccountDto> accounts = extractBankAccounts(bankAccountProxy.getAccountByEmail("ADMIN", email, email));
             for (BankAccountDto account : accounts) {
                 try {
                     bankAccountProxy.deleteAccount("ADMIN", email, account.getCurrencyCode());
@@ -218,8 +221,7 @@ public class UsersServiceImplementation implements UsersService {
         }
 
         try {
-            List<CryptoWalletDto> wallets = extractList(
-                    cryptoWalletProxy.getWalletByEmail("ADMIN", email, email), CryptoWalletDto.class);
+            List<CryptoWalletDto> wallets = extractCryptoWallets(cryptoWalletProxy.getWalletByEmail("ADMIN", email, email));
             for (CryptoWalletDto wallet : wallets) {
                 try {
                     cryptoWalletProxy.deleteWallet("ADMIN", email, wallet.getCryptoCurrencyCode());
@@ -232,13 +234,20 @@ public class UsersServiceImplementation implements UsersService {
         }
     }
 
-    private <T> List<T> extractList(ResponseEntity<?> response, Class<T> itemType) {
+    private List<BankAccountDto> extractBankAccounts(ResponseEntity<?> response) {
         Object body = response.getBody();
         if (body == null) {
             return List.of();
         }
-        CollectionType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, itemType);
-        return objectMapper.convertValue(body, listType);
+        return objectMapper.convertValue(body, new TypeReference<>() {});
+    }
+
+    private List<CryptoWalletDto> extractCryptoWallets(ResponseEntity<?> response) {
+        Object body = response.getBody();
+        if (body == null) {
+            return List.of();
+        }
+        return objectMapper.convertValue(body, new TypeReference<>() {});
     }
 
     private UserDto toDto(User user) {

@@ -64,6 +64,10 @@ public class BankAccountServiceImplementation implements BankAccountService {
             throw new UnauthorizedActionException("Only ADMIN can create bank accounts");
         }
 
+        if (body.getAmount() == null) {
+            return ResponseEntity.badRequest().body("Amount is required");
+        }
+
         assertEmailBelongsToUser(body.getEmail());
 
         if (bankAccountRepository.existsByEmailAndCurrencyCode(body.getEmail(), body.getCurrencyCode())) {
@@ -83,6 +87,10 @@ public class BankAccountServiceImplementation implements BankAccountService {
     public ResponseEntity<?> updateAccount(String actorRole, BankAccountDto body) {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
             throw new UnauthorizedActionException("Only ADMIN can update bank accounts");
+        }
+
+        if (body.getAmount() == null) {
+            return ResponseEntity.badRequest().body("Amount is required");
         }
 
         Optional<BankAccount> existingOpt = bankAccountRepository.findByEmailAndCurrencyCode(body.getEmail(), body.getCurrencyCode());

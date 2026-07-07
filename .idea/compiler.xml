@@ -6,29 +6,41 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="api-gateway" />
+        <module name="util" />
         <module name="service-library" />
         <module name="naming-server" />
       </profile>
-      <profile name="Annotation profile for crypto-wallet-service" enabled="true">
+      <profile name="Annotation profile for trade-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
-        <module name="users-service" />
         <module name="crypto-wallet-service" />
+        <module name="crypto-exchange-service" />
+        <module name="users-service" />
+        <module name="currency-conversion-service" />
+        <module name="trade-service" />
+        <module name="currency-exchange-service" />
         <module name="bank-account-service" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="api-gateway" options="-parameters" />
       <module name="bank-account-service" options="-parameters" />
+      <module name="crypto-exchange-service" options="-parameters" />
       <module name="crypto-wallet-service" options="-parameters" />
+      <module name="currency-conversion-service" options="-parameters" />
+      <module name="currency-exchange-service" options="-parameters" />
       <module name="naming-server" options="-parameters" />
       <module name="service-library" options="-parameters" />
+      <module name="trade-service" options="-parameters" />
       <module name="users-service" options="-parameters" />
+      <module name="util" options="-parameters" />
     </option>
   </component>
 </project>

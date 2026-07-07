@@ -24,6 +24,8 @@ public interface UsersService {
     ResponseEntity<?> updateUser(@RequestHeader("X-Actor-Role") String actorRole, @RequestBody UserDto body);
 
     @DeleteMapping("/users")
-    ResponseEntity<?> deleteUser(@RequestHeader("X-Actor-Role") String actorRole, @RequestParam String email);
+    ResponseEntity<?> deleteUser(@RequestHeader("X-Actor-Role") String actorRole,
+                                  @RequestHeader("X-Actor-Email") String actorEmail,
+                                  @RequestParam String email);
 
 }

@@ -28,18 +28,34 @@ export function basicAuthHeader(email, password) {
   return { Authorization: `Basic ${btoa(`${email}:${password}`)}` };
 }
 
+function looksTechnical(text) {
+  return text.length > 150 || /https?:\/\//.test(text) || /error_code|exception|stack ?trace/i.test(text);
+}
+
+// Only the backend's own {status, message, timestamp} shape (and short, clearly
+// human-written plain-text bodies) are trusted for direct display. Anything else -
+// raw exception text, an external API's error body, a 5xx from an upstream
+// dependency like CoinGecko - is replaced with a generic message so technical
+// details never reach the user.
 export function getErrorMessage(err) {
   if (err.response) {
-    const data = err.response.data;
-    if (data && typeof data === 'object' && data.message) {
+    const { status, data } = err.response;
+
+    if (data && typeof data === 'object' && typeof data.message === 'string') {
       return data.message;
     }
-    if (typeof data === 'string' && data.length > 0) {
+
+    if (status >= 500) {
+      return 'This service is temporarily unavailable. Please try again in a moment.';
+    }
+
+    if (typeof data === 'string' && data.length > 0 && !looksTechnical(data)) {
       return data;
     }
-    return `Error (${err.response.status})`;
+
+    return `Request failed (${status}). Please try again.`;
   }
-  return err.message || 'Unknown error';
+  return 'Unable to reach the server. Please check your connection and try again.';
 }
 
 export default api;

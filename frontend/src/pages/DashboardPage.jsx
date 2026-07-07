@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UsersManagement from '../components/UsersManagement';
 import BankAccounts from '../components/BankAccounts';
@@ -7,28 +8,49 @@ import TradeService from '../components/TradeService';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [accountsRefreshSignal, setAccountsRefreshSignal] = useState(0);
+  const [walletsRefreshSignal, setWalletsRefreshSignal] = useState(0);
 
   return (
     <div>
-      <h2>Welcome, {user.role}</h2>
-      <p>You are logged in as {user.email}.</p>
+      <div className="user-greeting">
+        <span className="greeting-line">Welcome,</span>
+        <span className="greeting-role">{user.role}</span>
+        <p className="greeting-sub">You are logged in as {user.email}.</p>
+      </div>
 
-      {user.role === 'OWNER' && <UsersManagement mode="owner" />}
+      {user.role === 'OWNER' && <UsersManagement mode="owner" size="lg" />}
 
       {user.role === 'ADMIN' && (
         <>
-          <UsersManagement mode="admin" />
-          <BankAccounts mode="admin" />
-          <CryptoWallets mode="admin" />
+          <UsersManagement
+            mode="admin"
+            size="lg"
+            onUsersChanged={() => {
+              setAccountsRefreshSignal((s) => s + 1);
+              setWalletsRefreshSignal((s) => s + 1);
+            }}
+          />
+          <BankAccounts mode="admin" size="lg" refreshSignal={accountsRefreshSignal} />
+          <CryptoWallets mode="admin" size="lg" refreshSignal={walletsRefreshSignal} />
         </>
       )}
 
       {user.role === 'USER' && (
         <>
-          <BankAccounts mode="user" />
-          <CryptoWallets mode="user" />
-          <CurrencyConversion />
-          <TradeService />
+          <div className="two-col-grid">
+            <BankAccounts mode="user" size="lg" refreshSignal={accountsRefreshSignal} />
+            <CryptoWallets mode="user" size="lg" refreshSignal={walletsRefreshSignal} />
+          </div>
+
+          <CurrencyConversion size="lg" onSuccess={() => setAccountsRefreshSignal((s) => s + 1)} />
+          <TradeService
+            size="lg"
+            onSuccess={() => {
+              setAccountsRefreshSignal((s) => s + 1);
+              setWalletsRefreshSignal((s) => s + 1);
+            }}
+          />
         </>
       )}
     </div>
