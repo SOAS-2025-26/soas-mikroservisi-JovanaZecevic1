@@ -64,6 +64,10 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
             throw new UnauthorizedActionException("Only ADMIN can create crypto wallets");
         }
 
+        if (body.getAmount() == null) {
+            return ResponseEntity.badRequest().body("Amount is required");
+        }
+
         assertEmailBelongsToUser(body.getEmail());
 
         if (cryptoWalletRepository.existsByEmailAndCryptoCurrencyCode(body.getEmail(), body.getCryptoCurrencyCode())) {
@@ -83,6 +87,10 @@ public class CryptoWalletServiceImplementation implements CryptoWalletService {
     public ResponseEntity<?> updateWallet(String actorRole, CryptoWalletDto body) {
         if (!ROLE_ADMIN.equalsIgnoreCase(actorRole)) {
             throw new UnauthorizedActionException("Only ADMIN can update crypto wallets");
+        }
+
+        if (body.getAmount() == null) {
+            return ResponseEntity.badRequest().body("Amount is required");
         }
 
         Optional<CryptoWallet> existingOpt = cryptoWalletRepository.findByEmailAndCryptoCurrencyCode(body.getEmail(), body.getCryptoCurrencyCode());
